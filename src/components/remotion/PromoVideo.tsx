@@ -1,4 +1,4 @@
-import { Sequence, useCurrentFrame, staticFile, interpolate } from "remotion";
+import { Sequence, useCurrentFrame, staticFile, interpolate, AbsoluteFill } from "remotion";
 import React from "react";
 
 // --- Types ---
@@ -16,11 +16,15 @@ interface BackgroundElement {
 interface TextElement {
   type: "text";
   content: string;
+  role?: "title" | "body";
+  align?: "left" | "center" | "right";
   position?: string;
   style?: {
     fontSize?: number;
     color?: string;
     fontWeight?: string | number;
+    fontStyle?: string;
+    lineHeight?: number;
   };
   animation?: Animation;
 }
@@ -53,51 +57,6 @@ export const FPS = 30;
 
 // --- Helpers ---
 
-const ZONE_CONFIG: Record<string, {
-  justifyContent: string;
-  alignItems: string;
-}> = {
-  "top-left":      { justifyContent: "flex-start", alignItems: "flex-start" },
-  "top-center":    { justifyContent: "flex-start", alignItems: "center" },
-  "top-right":     { justifyContent: "flex-start", alignItems: "flex-end" },
-  "center":        { justifyContent: "center",     alignItems: "center" },
-  "bottom-left":   { justifyContent: "flex-end",   alignItems: "flex-start" },
-  "bottom-center": { justifyContent: "flex-end",   alignItems: "center" },
-  "bottom-right":  { justifyContent: "flex-end",   alignItems: "flex-end" },
-};
-
-function zoneStyle(position: string): React.CSSProperties {
-  const config = ZONE_CONFIG[position] ?? ZONE_CONFIG["center"];
-  return {
-    position: "absolute",
-    inset: 0,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: config.justifyContent,
-    alignItems: config.alignItems,
-    gap: 16,
-    padding: 60,
-    overflow: "hidden",
-    pointerEvents: "none" as const,
-  };
-}
-
-function normalizePosition(position: string): string {
-  if (ZONE_CONFIG[position]) return position;
-  return "center";
-}
-
-function groupElementsByPosition(
-  elements: (TextElement | ImageElement)[]
-): Record<string, (TextElement | ImageElement)[]> {
-  const groups: Record<string, (TextElement | ImageElement)[]> = {};
-  for (const el of elements) {
-    const pos = normalizePosition(el.position ?? "center");
-    if (!groups[pos]) groups[pos] = [];
-    groups[pos].push(el);
-  }
-  return groups;
-}
 
 function useAnimationStyle(frame: number, animation?: Animation): React.CSSProperties {
   if (!animation) return {};
@@ -127,19 +86,25 @@ function useAnimationStyle(frame: number, animation?: Animation): React.CSSPrope
 const AnimatedText: React.FC<{ element: TextElement }> = ({ element }) => {
   const frame = useCurrentFrame();
   const animStyle = useAnimationStyle(frame, element.animation);
-  const centered = !element.position || element.position === "center" || element.position.endsWith("-center");
+  const textAlign: React.CSSProperties["textAlign"] = element.align
+    ? element.align
+    : (!element.position || element.position === "center" || element.position.endsWith("-center"))
+      ? "center"
+      : "left";
 
   return (
     <div
       style={{
         ...animStyle,
-        color: element.style?.color ?? "white",
+        color: element.style?.color ?? "#111111",
         fontSize: element.style?.fontSize ?? 64,
-        fontWeight: element.style?.fontWeight ?? 700,
+        fontWeight: element.style?.fontWeight ?? 400,
+        fontStyle: element.style?.fontStyle,
+        lineHeight: element.style?.lineHeight ?? 1.2,
         maxWidth: "90%",
-        textAlign: centered ? "center" : undefined,
+        textAlign,
         wordBreak: "break-word",
-        lineHeight: 1.2,
+        whiteSpace: "pre-line",
         overflow: "hidden",
         flexShrink: 1,
         minHeight: 0,
@@ -150,7 +115,7 @@ const AnimatedText: React.FC<{ element: TextElement }> = ({ element }) => {
   );
 };
 
-const AnimatedImage: React.FC<{ element: ImageElement }> = ({ element }) => {
+const AnimatedImage: React.FC<{ element: ImageElement; fullscreen?: boolean }> = ({ element, fullscreen = false }) => {
   const frame = useCurrentFrame();
   const animStyle = useAnimationStyle(frame, element.animation);
   const [errored, setErrored] = React.useState(false);
@@ -167,13 +132,129 @@ const AnimatedImage: React.FC<{ element: ImageElement }> = ({ element }) => {
       onError={() => setErrored(true)}
       style={{
         ...animStyle,
-        position: "absolute" as const,
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        objectFit: "cover" as const,
+        ...(fullscreen ? {
+          position: "absolute" as const,
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover" as const,
+        } : {
+          maxWidth: "100%",
+          maxHeight: "45%",
+          objectFit: "contain" as const,
+          borderRadius: 8,
+          flexShrink: 1,
+          minHeight: 0,
+        }),
       }}
     />
+  );
+};
+
+// --- Split layout ---
+
+const SceneSplitLayout: React.FC<{ scene: Scene; imageOnLeft: boolean }> = ({ scene, imageOnLeft }) => {
+  const elements = scene.elements ?? [];
+  const imageEl = elements.find((el): el is ImageElement => el.type === "image");
+  const bgEl = elements.find((el): el is BackgroundElement => el.type === "background");
+  const textEls = elements.filter((el): el is TextElement => el.type === "text");
+
+  const titleEl =
+    textEls.find((el) => el.role === "title") ??
+    [...textEls].sort((a, b) => (b.style?.fontSize ?? 0) - (a.style?.fontSize ?? 0))[0];
+  const bodyEl =
+    textEls.find((el) => el.role === "body") ??
+    textEls.filter((el) => el !== titleEl)[0];
+
+  const bgColor = bgEl?.style.color ?? "#cccccc";
+
+  const imagePanel = (
+    <div style={{ flex: "0 0 48%", position: "relative", overflow: "hidden", backgroundColor: bgColor }}>
+      {imageEl && <AnimatedImage element={imageEl} fullscreen />}
+    </div>
+  );
+
+  const contentPanel = (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        paddingTop: 60,
+        paddingBottom: 60,
+        paddingLeft: 64,
+        paddingRight: 64,
+        backgroundColor: "#ffffff",
+        overflow: "hidden",
+        gap: 28,
+      }}
+    >
+      {titleEl && <AnimatedText element={titleEl} />}
+      {bodyEl && <AnimatedText element={bodyEl} />}
+    </div>
+  );
+
+  return (
+    <AbsoluteFill style={{ display: "flex", flexDirection: "row" }}>
+      {imageOnLeft ? imagePanel : contentPanel}
+      {imageOnLeft ? contentPanel : imagePanel}
+    </AbsoluteFill>
+  );
+};
+
+// --- Title layout ---
+
+const SceneTitleLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const elements = scene.elements ?? [];
+  const textEls = elements.filter((el): el is TextElement => el.type === "text");
+  const titleEl = textEls.find((el) => el.role === "title") ?? textEls[0];
+  const subtitleEl = textEls.find((el) => el.role === "body") ?? textEls.filter((el) => el !== titleEl)[0];
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: "#ffffff",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        paddingLeft: 120,
+        paddingRight: 120,
+        gap: 32,
+      }}
+    >
+      {titleEl && <AnimatedText element={{ ...titleEl, align: "center" }} />}
+      {subtitleEl && <AnimatedText element={{ ...subtitleEl, align: "center" }} />}
+    </AbsoluteFill>
+  );
+};
+
+// --- Text-only layout ---
+
+const SceneTextOnlyLayout: React.FC<{ scene: Scene }> = ({ scene }) => {
+  const elements = scene.elements ?? [];
+  const textEls = elements.filter((el): el is TextElement => el.type === "text");
+  const titleEl = textEls.find((el) => el.role === "title") ?? textEls[0];
+  const bodyEl = textEls.find((el) => el.role === "body") ?? textEls.filter((el) => el !== titleEl)[0];
+
+  return (
+    <AbsoluteFill
+      style={{
+        backgroundColor: "#ffffff",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-start",
+        paddingTop: 90,
+        paddingBottom: 90,
+        paddingLeft: 100,
+        paddingRight: 100,
+        gap: 48,
+      }}
+    >
+      {titleEl && <AnimatedText element={titleEl} />}
+      {bodyEl && <AnimatedText element={bodyEl} />}
+    </AbsoluteFill>
   );
 };
 
@@ -188,46 +269,20 @@ export const PromoVideo: React.FC<PromoVideoProps> = ({ data }) => {
         const from = filtered
           .slice(0, index)
           .reduce((sum, s) => sum + (s.duration || 150), 0);
-        const elements = scene.elements ?? [];
         const duration = scene.duration || 150;
+
+        const isSplit = scene.layout === "split-left" || scene.layout === "split-right";
+        const isTitle = scene.layout === "title";
 
         return (
           <Sequence key={scene.id ?? index} from={from} durationInFrames={duration}>
-            <div style={{ position: "relative", width: "100%", height: "100%" }}>
-              {/* Background layer */}
-              {elements
-                .filter((el): el is BackgroundElement => el.type === "background")
-                .map((el, i) => (
-                  <div
-                    key={`bg-${i}`}
-                    style={{ position: "absolute", inset: 0, backgroundColor: el.style.color }}
-                  />
-                ))}
-
-              {/* Full-screen image layer */}
-              {elements
-                .filter((el): el is ImageElement => el.type === "image")
-                .map((el, i) => (
-                  <AnimatedImage key={`img-${i}`} element={el} />
-                ))}
-
-              {/* Text zones as absolute overlays */}
-              {Object.entries(
-                groupElementsByPosition(
-                  elements.filter(
-                    (el): el is TextElement => el.type === "text"
-                  )
-                )
-              ).map(([position, els]) => (
-                <div key={position} style={zoneStyle(position)}>
-                  {els.map((el, elIdx) =>
-                    el.type === "text" ? (
-                      <AnimatedText key={elIdx} element={el as TextElement} />
-                    ) : null
-                  )}
-                </div>
-              ))}
-            </div>
+            {isSplit ? (
+              <SceneSplitLayout scene={scene} imageOnLeft={scene.layout !== "split-right"} />
+            ) : isTitle ? (
+              <SceneTitleLayout scene={scene} />
+            ) : (
+              <SceneTextOnlyLayout scene={scene} />
+            )}
           </Sequence>
         );
       })}

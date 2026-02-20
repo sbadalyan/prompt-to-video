@@ -1,7 +1,5 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const openrouter = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -12,31 +10,10 @@ export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
 
-    // 1. Spin up the Remotion MCP server
-    const transport = new StdioClientTransport({
-      command: "npx",
-      args: ["@remotion/mcp@latest"],
-    });
-    const client = new Client({ name: "my-app", version: "1.0.0" });
-    await client.connect(transport);
-
-    // 2. Query Remotion docs for context
-    const docsResult = await client.callTool({
-      name: "remotion-documentation",
-      arguments: { query: prompt },
-    });
-    const firstBlock = Array.isArray(docsResult.content)
-      ? docsResult.content[0]
-      : undefined;
-    const remotionDocs =
-      firstBlock && "text" in firstBlock ? (firstBlock.text as string) : "";
-
-    await client.close();
-
-    // 3. Generate video script with Remotion context
+    // Generate video script
     const message = await openrouter.chat.completions.create({
       model: "meta-llama/llama-4-scout",
-      max_tokens: 4096,
+      max_tokens: 16000,
       messages: [
         {
           role: "system",
@@ -45,77 +22,142 @@ export async function POST(req: Request) {
 Your task:
 Generate structured JSON describing animated video scenes with multiple elements per scene.
 
-Return ONLY valid JSON in this exact format:
-
+Return ONLY valid JSON with this exact top-level structure:
 {
-  "title": "My Video",
+  "title": "Video Title",
   "fps": 30,
-  "scenes": [
+  "scenes": [ ...scene objects here... ]
+}
+
+Four supported scene layouts:
+
+LAYOUT "title" — large centered title on white background, used for opening/closing:
+{
+  "id": 1,
+  "duration": 150,
+  "layout": "title",
+  "elements": [
+    { "type": "background", "style": { "color": "#ffffff" } },
     {
-      "id": 1,
-      "duration": 150,
-      "layout": "absolute",
-      "elements": [
-        {
-          "type": "background",
-          "style": {
-            "color": "#1a1a2e"
-          }
-        },
-        {
-          "type": "text",
-          "content": "Hello World",
-          "position": "center",
-          "style": {
-            "fontSize": 64,
-            "color": "#ffffff",
-            "fontWeight": "bold"
-          },
-          "animation": {
-            "enter": "fade",
-            "duration": 20
-          }
-        },
-        {
-          "type": "image",
-          "searchQuery": "sunset over mountains",
-          "position": "bottom-center",
-          "animation": {
-            "enter": "fade",
-            "duration": 20
-          }
-        }
-      ]
+      "type": "text",
+      "role": "title",
+      "content": "Your Big Headline Here",
+      "align": "center",
+      "style": { "fontSize": 120, "color": "#111111", "fontWeight": 300 },
+      "animation": { "enter": "fade", "duration": 25 }
+    },
+    {
+      "type": "text",
+      "role": "body",
+      "content": "A short punchy subtitle that sets the tone.",
+      "align": "center",
+      "style": { "fontSize": 36, "color": "#555555", "fontWeight": 400 },
+      "animation": { "enter": "fade", "duration": 30 }
     }
   ]
 }
 
+LAYOUT "split-left" — image fills left half, white content panel on right:
+{
+  "id": 1,
+  "duration": 150,
+  "layout": "split-left",
+  "elements": [
+    { "type": "background", "style": { "color": "#cccccc" } },
+    { "type": "image", "searchQuery": "ocean waves calm" },
+    {
+      "type": "text",
+      "role": "title",
+      "content": "A Compelling Title",
+      "align": "left",
+      "style": { "fontSize": 80, "color": "#111111", "fontWeight": 300 },
+      "animation": { "enter": "fade", "duration": 20 }
+    },
+    {
+      "type": "text",
+      "role": "body",
+      "content": "Supporting text that elaborates on the main point with clarity.",
+      "align": "left",
+      "style": { "fontSize": 32, "color": "#444444", "fontWeight": 400 },
+      "animation": { "enter": "fade", "duration": 30 }
+    }
+  ]
+}
 
+LAYOUT "split-right" — image fills right half, white content panel on left:
+{
+  "id": 2,
+  "duration": 150,
+  "layout": "split-right",
+  "elements": [
+    { "type": "background", "style": { "color": "#cccccc" } },
+    { "type": "image", "searchQuery": "city skyline sunset" },
+    {
+      "type": "text",
+      "role": "title",
+      "content": "Another Great Title",
+      "align": "left",
+      "style": { "fontSize": 80, "color": "#111111", "fontWeight": 300 },
+      "animation": { "enter": "fade", "duration": 20 }
+    },
+    {
+      "type": "text",
+      "role": "body",
+      "content": "More detail about this section here.",
+      "align": "left",
+      "style": { "fontSize": 32, "color": "#444444", "fontWeight": 400 },
+      "animation": { "enter": "fade", "duration": 30 }
+    }
+  ]
+}
+
+LAYOUT "text-only" — clean white background with title and body text, no image:
+{
+  "id": 3,
+  "duration": 150,
+  "layout": "text-only",
+  "elements": [
+    { "type": "background", "style": { "color": "#ffffff" } },
+    {
+      "type": "text",
+      "role": "title",
+      "content": "The Topic",
+      "align": "left",
+      "style": { "fontSize": 80, "color": "#111111", "fontWeight": 300 },
+      "animation": { "enter": "fade", "duration": 20 }
+    },
+    {
+      "type": "text",
+      "role": "body",
+      "content": "Supporting paragraph that describes the topic in thoughtful detail.",
+      "align": "left",
+      "style": { "fontSize": 32, "color": "#333333", "fontWeight": 400 },
+      "animation": { "enter": "fade", "duration": 30 }
+    }
+  ]
+}
 
 Rules:
 - fps is always 30
-- 3–6 scenes
+- 15–19 scenes
 - "duration" is always in frames (not seconds). Each scene duration: 90–180 frames (3–6 seconds at 30fps)
 - Animation "duration" is also in frames: 15–30 frames
 - Every scene must have a "background" element as its first element
-- Use dark or vivid background colors (never white/light backgrounds like #ffffff or #f0f0f0)
-- Text color must contrast with the background (e.g. white text on dark background)
-- Each scene should have at least one "text" element with a "style" object containing fontSize, color, and fontWeight
-- Short, punchy text (max 12 words)
-- Scene 1 = hook
-- Last scene = call to action
-- Valid positions are ONLY: "top-left", "top-center", "top-right", "center", "bottom-left", "bottom-center", "bottom-right"
-- Use varied positions and animations across scenes
-- Each scene should have at most 2 text elements, placed at DIFFERENT positions to avoid overlap
-- You may optionally include ONE "image" element per scene (not required in every scene)
-- Image elements use "searchQuery" (a short English phrase describing the photo, 2–5 words) — NEVER use "src" or a URL
-- Images work best in middle scenes, not the hook (scene 1) or call-to-action (last scene)
-- When a scene has an image, ALWAYS place the image at "bottom-center" and text at "top-left" or "top-center"
-- Do not place an image at the same position as a text element
-- No extra commentary, no markdown, no explanation — only JSON
-
-Here are remotion docs:
-${remotionDocs}`,
+- Valid layout values: "title", "split-left", "split-right", "text-only" — no other values allowed
+- Scene 1 must always use "title" layout; last scene should also use "title" layout
+- Mix "split-left", "split-right", and "text-only" for middle scenes
+- All layouts use white backgrounds; text must always be dark (#111111, #222222, #333333, #444444)
+- For "split-left" / "split-right" layout: the content panel is always white — background element is used only as the image panel fallback color
+- For "split-left" / "split-right" layout: include exactly 1 "image" element with "searchQuery" only (no "position" field)
+- For "split-left" / "split-right" layout: 1–2 "text" elements with "role": "title" or "role": "body" and "align": "left"
+- For "title" layout: title fontSize 100–140, fontWeight 200–300; subtitle fontSize 32–44, fontWeight 400; subtitle is 1 short punchy sentence only
+- For "text-only" layout: background color must be "#ffffff" — no "image" elements
+- For "text-only" layout: 1–2 "text" elements with "role": "title" and/or "role": "body" and "align": "left"
+- Title fontSize 70–100, fontWeight 300–400 (light weight for clean elegant look)
+- Body fontSize 28–38, fontWeight 400; must be 3–4 full sentences (never just 1 sentence); may include "\\n• item" for bullet points
+- Each scene needs at least one "text" element with fontSize, color, and fontWeight
+- Image elements use "searchQuery" (2–5 word English phrase) — NEVER use "src" or a URL
+- No extra commentary, no markdown, no explanation — only JSON`,
         },
         { role: "user", content: prompt },
       ],
@@ -128,11 +170,23 @@ ${remotionDocs}`,
     let parsed;
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
+    } catch (e) {
+      console.error("JSON parse failed:", e);
+      console.error("Raw response:", raw);
       return NextResponse.json(
         { error: "The AI returned malformed JSON. Please try again with a simpler prompt." },
         { status: 502 },
       );
+    }
+
+    // Normalize: if AI returned a single scene or nested structure without top-level wrapper
+    if (!Array.isArray(parsed.scenes)) {
+      if (Array.isArray(parsed.video?.scenes)) {
+        parsed = parsed.video;
+      } else if (parsed.id && parsed.layout) {
+        // AI returned a single bare scene — wrap it
+        parsed = { title: "", fps: 30, scenes: [parsed] };
+      }
     }
 
     // Resolve image searchQuery fields via Unsplash API
