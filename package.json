@@ -1,0 +1,32 @@
+{
+  "name": "prompt-to-video",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "openai": "^4.85.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@remotion/mcp": "^4.0.423",
+    "@remotion/player": "^4.0.419",
+    "@remotion/renderer": "^4.0.419",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "^4.0.419"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
