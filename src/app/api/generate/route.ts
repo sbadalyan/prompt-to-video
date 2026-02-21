@@ -51,7 +51,7 @@ LAYOUT "title" — large centered title on white background, used for opening/cl
       "role": "body",
       "content": "A short punchy subtitle that sets the tone.",
       "align": "center",
-      "style": { "fontSize": 36, "color": "#555555", "fontWeight": 400 },
+      "style": { "fontSize": 52, "color": "#555555", "fontWeight": 400 },
       "animation": { "enter": "fade", "duration": 30 }
     }
   ]
@@ -78,7 +78,7 @@ LAYOUT "split-left" — image fills left half, white content panel on right:
       "role": "body",
       "content": "Supporting text that elaborates on the main point with clarity.",
       "align": "left",
-      "style": { "fontSize": 32, "color": "#444444", "fontWeight": 400 },
+      "style": { "fontSize": 48, "color": "#444444", "fontWeight": 400 },
       "animation": { "enter": "fade", "duration": 30 }
     }
   ]
@@ -105,7 +105,7 @@ LAYOUT "split-right" — image fills right half, white content panel on left:
       "role": "body",
       "content": "More detail about this section here.",
       "align": "left",
-      "style": { "fontSize": 32, "color": "#444444", "fontWeight": 400 },
+      "style": { "fontSize": 48, "color": "#444444", "fontWeight": 400 },
       "animation": { "enter": "fade", "duration": 30 }
     }
   ]
@@ -131,7 +131,7 @@ LAYOUT "text-only" — clean white background with title and body text, no image
       "role": "body",
       "content": "Supporting paragraph that describes the topic in thoughtful detail.",
       "align": "left",
-      "style": { "fontSize": 32, "color": "#333333", "fontWeight": 400 },
+      "style": { "fontSize": 48, "color": "#333333", "fontWeight": 400 },
       "animation": { "enter": "fade", "duration": 30 }
     }
   ]
@@ -150,11 +150,11 @@ Rules:
 - For "split-left" / "split-right" layout: the content panel is always white — background element is used only as the image panel fallback color
 - For "split-left" / "split-right" layout: include exactly 1 "image" element with "searchQuery" only (no "position" field)
 - For "split-left" / "split-right" layout: 1–2 "text" elements with "role": "title" or "role": "body" and "align": "left"
-- For "title" layout: title fontSize 100–140, fontWeight 200–300; subtitle fontSize 32–44, fontWeight 400; subtitle is 1 short punchy sentence only
+- For "title" layout: title fontSize 100–140, fontWeight 200–300; subtitle fontSize 48–60, fontWeight 400; subtitle is 1 short punchy sentence only
 - For "text-only" layout: background color must be "#ffffff" — no "image" elements
 - For "text-only" layout: 1–2 "text" elements with "role": "title" and/or "role": "body" and "align": "left"
 - Title fontSize 70–100, fontWeight 300–400 (light weight for clean elegant look)
-- Body fontSize 28–38, fontWeight 400; must be 3–4 full sentences (never just 1 sentence); may include "\\n• item" for bullet points
+- Body fontSize 45–55, fontWeight 400, lineHeight 1.7–1.9; must be 8–10 full sentences (never just 1 sentence); may include "\\n• item" for bullet points
 - Each scene needs at least one "text" element with fontSize, color, and fontWeight
 - Image elements use "searchQuery" (2–5 word English phrase) — NEVER use "src" or a URL
 - No extra commentary, no markdown, no explanation — only JSON`,

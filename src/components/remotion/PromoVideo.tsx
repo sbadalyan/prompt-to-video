@@ -97,10 +97,10 @@ const AnimatedText: React.FC<{ element: TextElement }> = ({ element }) => {
       style={{
         ...animStyle,
         color: element.style?.color ?? "#111111",
-        fontSize: element.style?.fontSize ?? 64,
+        fontSize: element.style?.fontSize ?? 100,
         fontWeight: element.style?.fontWeight ?? 400,
         fontStyle: element.style?.fontStyle,
-        lineHeight: element.style?.lineHeight ?? 1.2,
+        lineHeight: element.style?.lineHeight ?? (element.role === "body" ? 1.8 : 1.2),
         maxWidth: "90%",
         textAlign,
         wordBreak: "break-word",
