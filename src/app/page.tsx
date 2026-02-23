@@ -10,8 +10,9 @@ export default function Home() {
   const [promptData, setPromptData] = useState<PromoVideoProps["data"] | null>(null);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-zinc-950">
+    <div className="flex min-h-screen  justify-center font-sans dark:bg-zinc-950">
       <main className="flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
+        <div className="text-center">Turn your idea into stunning videos in seconds</div>
         <Input onGenerate={setPromptData} />
         {promptData && <VideoPlayer promptData={promptData} />}
       </main>

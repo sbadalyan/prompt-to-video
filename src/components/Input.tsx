@@ -40,7 +40,7 @@ const Input = ({ onGenerate }: InputProps) => {
     <form onSubmit={onSubmit}>
       <textarea
         value={promptValue}
-        placeholder='Describe your promo video...'
+        placeholder='Describe your video prompt...'
         onChange={(event) => setPromptValue(event.target.value)}
         className='h-32 w-full resize-none rounded-lg border border-zinc-300 bg-white p-3 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-500'
       />
