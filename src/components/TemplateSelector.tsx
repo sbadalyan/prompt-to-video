@@ -35,9 +35,9 @@ export default function TemplateSelector({ prompt, onSelect, onBack, disabled, e
         </p>
       )}
 
-      {/* Template grid */}
+      {/* Template grid — only promo templates */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {TEMPLATES.map((template) => (
+        {TEMPLATES.filter((t) => t.type !== 'chart').map((template) => (
           <TemplateCard
             key={template.id}
             template={template}

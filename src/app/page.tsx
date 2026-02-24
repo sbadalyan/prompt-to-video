@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import Input from '../components/Input';
+import Input, { type VideoType } from '../components/Input';
 import TemplateSelector from '../components/TemplateSelector';
-import type { PromoVideoProps } from '../components/remotion/PromoVideo';
+import { TEMPLATES } from '../lib/templates';
 import type { Template } from '../lib/templates';
+import type { VideoResult } from '../components/VideoPlayer';
 
 const VideoPlayer = dynamic(
   () => import("../components/VideoPlayer").then((mod) => mod.VideoPlayer),
@@ -16,23 +17,17 @@ type Step = 'prompt' | 'templates' | 'generating' | 'video';
 export default function Home() {
   const [step, setStep] = useState<Step>('prompt');
   const [prompt, setPrompt] = useState('');
-  const [promptData, setPromptData] = useState<PromoVideoProps["data"] | null>(null);
+  const [promptData, setPromptData] = useState<VideoResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handlePromptSubmit = (value: string) => {
-    setPrompt(value);
-    setError(null);
-    setStep('templates');
-  };
-
-  const handleTemplateSelect = async (template: Template) => {
+  const generateVideo = async (promptValue: string, template: Template, errorStep: Step = 'templates') => {
     setStep('generating');
     setError(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, template }),
+        body: JSON.stringify({ prompt: promptValue, template }),
       });
       const text = await res.text();
       if (!res.ok) {
@@ -43,8 +38,26 @@ export default function Home() {
       setStep('video');
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      setStep(errorStep);
+    }
+  };
+
+  const handlePromptSubmit = (value: string, type: VideoType) => {
+    setPrompt(value);
+    setError(null);
+
+    if (type === 'chart') {
+      const chartTemplate = TEMPLATES.find((t) => t.type === 'chart');
+      if (chartTemplate) {
+        generateVideo(value, chartTemplate, 'prompt');
+      }
+    } else {
       setStep('templates');
     }
+  };
+
+  const handleTemplateSelect = (template: Template) => {
+    generateVideo(prompt, template, 'templates');
   };
 
   return (
@@ -54,6 +67,11 @@ export default function Home() {
         {step === 'prompt' && (
           <>
             <div className="text-center">Turn your idea into stunning videos in seconds</div>
+            {error && (
+              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 rounded-lg px-4 py-3">
+                {error}
+              </p>
+            )}
             <Input onSubmit={handlePromptSubmit} />
           </>
         )}
@@ -100,7 +118,7 @@ export default function Home() {
           <div className="flex flex-col gap-6">
             <VideoPlayer promptData={promptData} />
             <button
-              onClick={() => { setStep('prompt'); setPromptData(null); }}
+              onClick={() => { setStep('prompt'); setPromptData(null); setError(null); }}
               className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-center"
             >
               ← Create another video

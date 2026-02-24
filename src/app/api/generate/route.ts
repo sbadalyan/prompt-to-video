@@ -6,9 +6,99 @@ const openrouter = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
+async function handleChartGeneration(prompt: string) {
+  const message = await openrouter.chat.completions.create({
+    model: "meta-llama/llama-4-scout",
+    max_tokens: 16000,
+    messages: [
+      {
+        role: "system",
+        content: `You are a data visualization expert that generates animated bar chart race data.
+
+Your task: Generate structured JSON for an animated bar chart race video based on the user's topic.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "type": "chart",
+  "title": "Chart Title",
+  "subtitle": "Date range or context (e.g. '2005 – 2024')",
+  "unit": "Unit label shown beneath title (e.g. 'Monthly Active Users', 'Revenue (USD)', 'Subscribers')",
+  "valueFormat": "millions",
+  "framesPerPeriod": 60,
+  "maxBars": 10,
+  "frames": [
+    {
+      "label": "2005",
+      "items": [
+        { "name": "Item Name", "value": 1500000 },
+        { "name": "Item Name 2", "value": 1200000 }
+      ]
+    }
+  ]
+}
+
+Rules:
+- "valueFormat": one of "number", "millions", "billions", "percentage" — choose what best fits the values
+- "framesPerPeriod": always 60
+- "maxBars": always 10
+- "frames": 15–25 time periods, sorted chronologically by label
+- Each frame must have exactly 10–12 items sorted by value descending (highest first)
+- Values must be realistic and change meaningfully between periods
+- Items can enter and exit the top 10 as real rankings change — do NOT keep the same 10 items across all frames
+- Use accurate historical data if the topic is well-known; otherwise generate plausible fictional data
+- "label" is a short string: a year ("2005"), month+year ("Jan 2020"), or quarter ("Q1 2022")
+- No markdown fences, no explanation — only the JSON object`,
+      },
+      { role: "user", content: prompt },
+    ],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = message.choices[0]?.message?.content ?? "{}";
+  const cleaned = raw.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    console.error("Chart JSON parse failed:", e);
+    return NextResponse.json(
+      { error: "The AI returned malformed JSON. Please try again with a simpler prompt." },
+      { status: 502 },
+    );
+  }
+
+  // Validate and sanitize frames
+  if (!Array.isArray(parsed.frames)) {
+    return NextResponse.json({ error: "AI did not return chart frames." }, { status: 502 });
+  }
+
+  for (const frame of parsed.frames) {
+    if (!Array.isArray(frame.items)) frame.items = [];
+    // Ensure values are numbers and sorted descending
+    frame.items = frame.items
+      .filter((item: { name?: unknown; value?: unknown }) => typeof item.name === "string" && typeof item.value === "number")
+      .sort((a: { value: number }, b: { value: number }) => b.value - a.value)
+      .slice(0, 12);
+  }
+
+  // Remove empty frames
+  parsed.frames = parsed.frames.filter((f: { items: unknown[] }) => f.items.length > 0);
+
+  console.log("chart result", { type: parsed.type, title: parsed.title, periods: parsed.frames.length });
+
+  return NextResponse.json({ result: parsed });
+}
+
 export async function POST(req: Request) {
   try {
     const { prompt, template } = await req.json();
+
+    // Chart template: separate AI prompt and response structure
+    if (template?.type === "chart") {
+      return handleChartGeneration(prompt);
+    }
+
     const styleGuidance = template?.styleHint
       ? `\n\nStyle guidance for this video:\n${template.styleHint}`
       : '';

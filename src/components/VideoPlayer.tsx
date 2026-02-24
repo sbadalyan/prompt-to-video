@@ -1,6 +1,9 @@
 "use client";
 import { Player } from "@remotion/player";
 import { PromoVideo, FPS, type PromoVideoProps } from "@/components/remotion/PromoVideo";
+import { ChartVideo, type ChartVideoData } from "@/components/remotion/ChartVideo";
+
+export type VideoResult = PromoVideoProps["data"] | ChartVideoData;
 
 const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
   <div
@@ -82,14 +85,40 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
   </div>
 );
 
-export const VideoPlayer = ({ promptData }: { promptData: PromoVideoProps["data"] }) => {
-  const fps = promptData?.fps ?? FPS;
-  const totalDurationInFrames = promptData?.scenes
-    ? promptData.scenes.reduce((sum, s) => sum + (s.duration || 150), 0)
-    : 270;
+export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
+  const isChart =
+    promptData !== null &&
+    promptData !== undefined &&
+    "type" in (promptData as object) &&
+    (promptData as ChartVideoData).type === "chart";
 
-  const coverImage = promptData?.coverImage;
-  const title = promptData?.title;
+  if (isChart) {
+    const chartData = promptData as ChartVideoData;
+    const framesPerPeriod = chartData.framesPerPeriod ?? 60;
+    const totalDurationInFrames = framesPerPeriod * (chartData.frames?.length ?? 1);
+
+    return (
+      <Player
+        component={ChartVideo}
+        durationInFrames={totalDurationInFrames}
+        fps={30}
+        compositionWidth={1920}
+        compositionHeight={1080}
+        controls
+        style={{ width: "100%" }}
+        inputProps={{ data: chartData }}
+        renderPoster={() => <CoverPoster title={chartData.title} />}
+        showPosterWhenUnplayed
+        showPosterWhenEnded
+      />
+    );
+  }
+
+  const promoData = promptData as PromoVideoProps["data"];
+  const fps = promoData?.fps ?? FPS;
+  const totalDurationInFrames = promoData?.scenes
+    ? promoData.scenes.reduce((sum, s) => sum + (s.duration || 150), 0)
+    : 270;
 
   return (
     <Player
@@ -100,8 +129,8 @@ export const VideoPlayer = ({ promptData }: { promptData: PromoVideoProps["data"
       compositionHeight={1080}
       controls
       style={{ width: "100%" }}
-      inputProps={{ data: promptData }}
-      renderPoster={() => <CoverPoster src={coverImage} title={title} />}
+      inputProps={{ data: promoData }}
+      renderPoster={() => <CoverPoster src={promoData?.coverImage} title={promoData?.title} />}
       showPosterWhenUnplayed
       showPosterWhenEnded
     />
