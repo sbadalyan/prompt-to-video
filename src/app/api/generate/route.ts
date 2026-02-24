@@ -243,6 +243,21 @@ Rules:
       }
     }
 
+    // Fetch a cover image from Unsplash based on the video title
+    if (unsplashKey && parsed.title) {
+      const coverQuery = encodeURIComponent(parsed.title);
+      const coverRes = await fetch(
+        `https://api.unsplash.com/search/photos?query=${coverQuery}&per_page=1&orientation=landscape&client_id=${unsplashKey}`
+      );
+      if (coverRes.ok) {
+        const coverData = await coverRes.json();
+        const coverPhoto = coverData.results?.[0];
+        if (coverPhoto?.urls?.regular) {
+          parsed.coverImage = coverPhoto.urls.regular;
+        }
+      }
+    }
+
     console.log(parsed);
 
     return NextResponse.json({ result: parsed });

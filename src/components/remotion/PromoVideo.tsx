@@ -50,6 +50,7 @@ export interface PromoVideoProps {
     title: string;
     fps?: number;
     scenes: Scene[];
+    coverImage?: string;
   };
 }
 
@@ -61,7 +62,7 @@ export const FPS = 30;
 function useAnimationStyle(frame: number, animation?: Animation): React.CSSProperties {
   if (!animation) return {};
   const { enter, duration } = animation;
-  const progress = interpolate(frame, [0, duration], [0, 1], { extrapolateRight: "clamp" });
+  const progress = interpolate(frame, [0, duration], [0.7, 1], { extrapolateRight: "clamp" });
 
   switch (enter) {
     case "fade":
