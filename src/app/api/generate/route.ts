@@ -8,7 +8,10 @@ const openrouter = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, template } = await req.json();
+    const styleGuidance = template?.styleHint
+      ? `\n\nStyle guidance for this video:\n${template.styleHint}`
+      : '';
 
     // Generate video script
     const message = await openrouter.chat.completions.create({
@@ -145,19 +148,19 @@ Rules:
 - Every scene must have a "background" element as its first element
 - Valid layout values: "title", "split-left", "split-right", "text-only" — no other values allowed
 - Scene 1 must always use "title" layout; last scene should also use "title" layout
-- Mix "split-left", "split-right", and "text-only" for middle scenes
+- For middle scenes: at least 75% must use "split-left" or "split-right" — alternate between them frequently; use "text-only" for at most 2–3 scenes total
 - All layouts use white backgrounds; text must always be dark (#111111, #222222, #333333, #444444)
 - For "split-left" / "split-right" layout: the content panel is always white — background element is used only as the image panel fallback color
 - For "split-left" / "split-right" layout: include exactly 1 "image" element with "searchQuery" only (no "position" field)
 - For "split-left" / "split-right" layout: 1–2 "text" elements with "role": "title" or "role": "body" and "align": "left"
-- For "title" layout: title fontSize 100–140, fontWeight 200–300; subtitle fontSize 48–60, fontWeight 400; subtitle is 1 short punchy sentence only
+- For "title" layout: title fontSize 100–140, fontWeight 200–300, lineHeight 1.1–1.2; subtitle fontSize 48–60, fontWeight 400, lineHeight 1.4–1.5; subtitle is 1 short punchy sentence only
 - For "text-only" layout: background color must be "#ffffff" — no "image" elements
 - For "text-only" layout: 1–2 "text" elements with "role": "title" and/or "role": "body" and "align": "left"
 - Title fontSize 70–100, fontWeight 300–400 (light weight for clean elegant look)
-- Body fontSize 45–55, fontWeight 400, lineHeight 1.7–1.9; must be 8–10 full sentences (never just 1 sentence); may include "\\n• item" for bullet points
+- Body fontSize 45–55, fontWeight 400, lineHeight 1.7–1.9; for "text-only" scenes body must be 8–10 full sentences (never bullet-only, never sparse); for split scenes body must be 3–5 full sentences or 4–6 bullet points
 - Each scene needs at least one "text" element with fontSize, color, and fontWeight
 - Image elements use "searchQuery" (2–5 word English phrase) — NEVER use "src" or a URL
-- No extra commentary, no markdown, no explanation — only JSON`,
+- No extra commentary, no markdown, no explanation — only JSON${styleGuidance}`,
         },
         { role: "user", content: prompt },
       ],
