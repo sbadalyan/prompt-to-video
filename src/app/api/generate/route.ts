@@ -8,7 +8,7 @@ const openrouter = new OpenAI({
 
 async function handleChartGeneration(prompt: string) {
   const message = await openrouter.chat.completions.create({
-    model: "meta-llama/llama-4-scout",
+    model: "google/gemini-2.0-flash-001",
     max_tokens: 16000,
     messages: [
       {
@@ -39,6 +39,7 @@ Return ONLY valid JSON with this exact structure:
 
 Rules:
 - "valueFormat": one of "number", "millions", "billions", "percentage" — choose what best fits the values
+- CRITICAL: ALL "value" fields must ALWAYS be raw absolute numbers, never pre-divided. Examples: 57 million subscribers = 57000000, NOT 57. $3.2 billion revenue = 3200000000, NOT 3.2. 45% market share = 45, NOT 0.45.
 - "framesPerPeriod": always 60
 - "maxBars": always 10
 - "frames": 15–25 time periods, sorted chronologically by label
@@ -68,9 +69,16 @@ Rules:
     );
   }
 
-  // Validate and sanitize frames
+  // Validate and sanitize frames — handle common nesting patterns
   if (!Array.isArray(parsed.frames)) {
-    return NextResponse.json({ error: "AI did not return chart frames." }, { status: 502 });
+    // Some models nest the chart under a key like parsed.chart or parsed.data
+    const nested = parsed.chart ?? parsed.data ?? parsed.result;
+    if (nested && Array.isArray(nested.frames)) {
+      Object.assign(parsed, nested);
+    } else {
+      console.error("Missing frames. Parsed keys:", Object.keys(parsed));
+      return NextResponse.json({ error: "AI did not return chart frames." }, { status: 502 });
+    }
   }
 
   for (const frame of parsed.frames) {

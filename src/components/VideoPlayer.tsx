@@ -2,7 +2,6 @@
 import { Player } from "@remotion/player";
 import { PromoVideo, FPS, type PromoVideoProps } from "@/components/remotion/PromoVideo";
 import { ChartVideo, type ChartVideoData } from "@/components/remotion/ChartVideo";
-
 export type VideoResult = PromoVideoProps["data"] | ChartVideoData;
 
 const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
@@ -86,13 +85,14 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
 );
 
 export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
-  const isChart =
+  const dataType =
     promptData !== null &&
     promptData !== undefined &&
-    "type" in (promptData as object) &&
-    (promptData as ChartVideoData).type === "chart";
+    "type" in (promptData as object)
+      ? (promptData as { type: string }).type
+      : null;
 
-  if (isChart) {
+  if (dataType === "chart") {
     const chartData = promptData as ChartVideoData;
     const framesPerPeriod = chartData.framesPerPeriod ?? 60;
     const totalDurationInFrames = framesPerPeriod * (chartData.frames?.length ?? 1);

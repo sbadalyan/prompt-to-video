@@ -23,7 +23,13 @@ const Input = ({ onSubmit }: InputProps) => {
       ? 'e.g. Top 10 most subscribed YouTube channels 2005–2024'
       : 'Describe your video idea...';
 
-  const buttonLabel = videoType === 'chart' ? 'Generate Chart →' : 'Choose Style →';
+  const buttonLabel =
+    videoType === 'chart' ? 'Generate Chart →' : 'Choose Style →';
+
+  const TYPE_LABELS: Record<VideoType, string> = {
+    promo: 'Presentation',
+    chart: 'Bar Chart Race',
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -40,7 +46,7 @@ const Input = ({ onSubmit }: InputProps) => {
                 : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300'
             }`}
           >
-            {type === 'promo' ? 'Presentation' : 'Bar Chart Race'}
+            {TYPE_LABELS[type]}
           </button>
         ))}
       </div>
