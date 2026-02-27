@@ -159,7 +159,7 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
         controls
         style={{ width: "100%" }}
         inputProps={{ data: chartData }}
-        renderPoster={() => <CoverPoster title={chartData.title} />}
+        renderPoster={() => <CoverPoster src={chartData.coverImage} title={chartData.title} />}
         showPosterWhenUnplayed
       />
     );

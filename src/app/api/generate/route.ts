@@ -42,7 +42,7 @@ Rules:
 - CRITICAL: ALL "value" fields must ALWAYS be raw absolute numbers, never pre-divided. Examples: 57 million subscribers = 57000000, NOT 57. $3.2 billion revenue = 3200000000, NOT 3.2. 45% market share = 45, NOT 0.45.
 - "framesPerPeriod": always 60
 - "maxBars": always 10
-- "frames": 15–25 time periods, sorted chronologically by label
+- "frames": generate ALL time periods for the requested range (typically 15–30); NEVER truncate the end year the user asks for
 - Each frame must have exactly 10–12 items sorted by value descending (highest first)
 - Values must be realistic and change meaningfully between periods
 - Items can enter and exit the top 10 as real rankings change — do NOT keep the same 10 items across all frames
@@ -92,6 +92,22 @@ Rules:
 
   // Remove empty frames
   parsed.frames = parsed.frames.filter((f: { items: unknown[] }) => f.items.length > 0);
+
+  // Fetch a cover image from Unsplash based on the chart title
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (unsplashKey && parsed.title) {
+    const coverQuery = encodeURIComponent(parsed.title);
+    const coverRes = await fetch(
+      `https://api.unsplash.com/search/photos?query=${coverQuery}&per_page=1&orientation=landscape&client_id=${unsplashKey}`
+    );
+    if (coverRes.ok) {
+      const coverData = await coverRes.json();
+      const coverPhoto = coverData.results?.[0];
+      if (coverPhoto?.urls?.regular) {
+        parsed.coverImage = coverPhoto.urls.regular;
+      }
+    }
+  }
 
   console.log("chart result", { type: parsed.type, title: parsed.title, periods: parsed.frames.length });
 
