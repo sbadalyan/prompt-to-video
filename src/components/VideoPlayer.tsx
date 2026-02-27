@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { PromoVideo, FPS, type PromoVideoProps } from "@/components/remotion/PromoVideo";
 import { ChartVideo, type ChartVideoData } from "@/components/remotion/ChartVideo";
@@ -87,6 +87,8 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
 
 export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
   const playerRef = useRef<PlayerRef>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const dataType =
     promptData !== null &&
@@ -123,24 +125,86 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
     return () => player.removeEventListener("ended", handleEnded);
   }, [chartLastFrame]);
 
+  const handleDownload = async () => {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: promptData }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Render failed" }));
+        throw new Error(err.error ?? "Render failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "video.mp4";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const DownloadButton = () => (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-100 text-sm font-medium transition-colors"
+      >
+        {downloading ? (
+          <>
+            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Rendering…
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download MP4
+          </>
+        )}
+      </button>
+      {downloadError && (
+        <p className="text-xs text-red-500">{downloadError}</p>
+      )}
+    </div>
+  );
+
   if (dataType === "line-chart") {
     const lineData = promptData as LineChartVideoData;
     const totalDurationInFrames = chartLastFrame + 1;
 
     return (
-      <Player
-        ref={playerRef}
-        component={LineChartVideo}
-        durationInFrames={totalDurationInFrames}
-        fps={30}
-        compositionWidth={1920}
-        compositionHeight={1080}
-        controls
-        style={{ width: "100%" }}
-        inputProps={{ data: lineData }}
-        renderPoster={() => <CoverPoster src={lineData.coverImage} title={lineData.title} />}
-        showPosterWhenUnplayed
-      />
+      <div className="flex flex-col gap-3">
+        <Player
+          ref={playerRef}
+          component={LineChartVideo}
+          durationInFrames={totalDurationInFrames}
+          fps={30}
+          compositionWidth={1920}
+          compositionHeight={1080}
+          controls
+          style={{ width: "100%" }}
+          inputProps={{ data: lineData }}
+          renderPoster={() => <CoverPoster src={lineData.coverImage} title={lineData.title} />}
+          showPosterWhenUnplayed
+        />
+        <DownloadButton />
+      </div>
     );
   }
 
@@ -149,19 +213,22 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
     const totalDurationInFrames = chartLastFrame + 1;
 
     return (
-      <Player
-        ref={playerRef}
-        component={ChartVideo}
-        durationInFrames={totalDurationInFrames}
-        fps={30}
-        compositionWidth={1920}
-        compositionHeight={1080}
-        controls
-        style={{ width: "100%" }}
-        inputProps={{ data: chartData }}
-        renderPoster={() => <CoverPoster src={chartData.coverImage} title={chartData.title} />}
-        showPosterWhenUnplayed
-      />
+      <div className="flex flex-col gap-3">
+        <Player
+          ref={playerRef}
+          component={ChartVideo}
+          durationInFrames={totalDurationInFrames}
+          fps={30}
+          compositionWidth={1920}
+          compositionHeight={1080}
+          controls
+          style={{ width: "100%" }}
+          inputProps={{ data: chartData }}
+          renderPoster={() => <CoverPoster src={chartData.coverImage} title={chartData.title} />}
+          showPosterWhenUnplayed
+        />
+        <DownloadButton />
+      </div>
     );
   }
 
@@ -172,18 +239,21 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
     : 270;
 
   return (
-    <Player
-      component={PromoVideo}
-      durationInFrames={totalDurationInFrames}
-      fps={fps}
-      compositionWidth={1920}
-      compositionHeight={1080}
-      controls
-      style={{ width: "100%" }}
-      inputProps={{ data: promoData }}
-      renderPoster={() => <CoverPoster src={promoData?.coverImage} title={promoData?.title} />}
-      showPosterWhenUnplayed
-      showPosterWhenEnded
-    />
+    <div className="flex flex-col gap-3">
+      <Player
+        component={PromoVideo}
+        durationInFrames={totalDurationInFrames}
+        fps={fps}
+        compositionWidth={1920}
+        compositionHeight={1080}
+        controls
+        style={{ width: "100%" }}
+        inputProps={{ data: promoData }}
+        renderPoster={() => <CoverPoster src={promoData?.coverImage} title={promoData?.title} />}
+        showPosterWhenUnplayed
+        showPosterWhenEnded
+      />
+      <DownloadButton />
+    </div>
   );
 };

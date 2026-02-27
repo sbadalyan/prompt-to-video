@@ -9,12 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "openai": "^4.85.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "@remotion/bundler": "^4.0.419",
     "@remotion/mcp": "^4.0.423",
     "@remotion/player": "^4.0.419",
     "@remotion/renderer": "^4.0.419",
+    "lightningcss": "^1.31.1",
     "next": "16.1.6",
+    "openai": "^4.85.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "^4.0.419"
