@@ -1,8 +1,10 @@
 "use client";
-import { Player } from "@remotion/player";
+import { useRef, useEffect } from "react";
+import { Player, type PlayerRef } from "@remotion/player";
 import { PromoVideo, FPS, type PromoVideoProps } from "@/components/remotion/PromoVideo";
 import { ChartVideo, type ChartVideoData } from "@/components/remotion/ChartVideo";
-export type VideoResult = PromoVideoProps["data"] | ChartVideoData;
+import { LineChartVideo, type LineChartVideoData } from "@/components/remotion/LineChartVideo";
+export type VideoResult = PromoVideoProps["data"] | ChartVideoData | LineChartVideoData;
 
 const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
   <div
@@ -10,9 +12,6 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
       width: "100%",
       height: "100%",
       position: "relative",
-      display: "flex",
-      alignItems: "flex-end",
-      justifyContent: "flex-start",
       overflow: "hidden",
       background: "#111",
     }}
@@ -35,20 +34,22 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
       style={{
         position: "absolute",
         inset: 0,
-        background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 50%)",
       }}
     />
     {title && (
       <div
         style={{
-          position: "relative",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
           color: "#fff",
-          fontSize: 28,
+          fontSize: 22,
           fontWeight: 600,
-          padding: "24px 32px",
+          padding: "18px 24px",
           lineHeight: 1.3,
-          maxWidth: "80%",
-          textShadow: "0 1px 4px rgba(0,0,0,0.5)",
+          textShadow: "0 1px 6px rgba(0,0,0,0.7)",
         }}
       >
         {title}
@@ -85,6 +86,8 @@ const CoverPoster = ({ src, title }: { src?: string; title?: string }) => (
 );
 
 export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
+  const playerRef = useRef<PlayerRef>(null);
+
   const dataType =
     promptData !== null &&
     promptData !== undefined &&
@@ -92,13 +95,62 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
       ? (promptData as { type: string }).type
       : null;
 
-  if (dataType === "chart") {
+  // Compute last frame for chart types so we can seek to it on ended
+  let chartLastFrame = -1;
+  if (dataType === "line-chart") {
+    const lineData = promptData as LineChartVideoData;
+    const framesPerPeriod = lineData.framesPerPeriod ?? 30;
+    const totalPoints = lineData.series?.[0]?.data?.length ?? 1;
+    chartLastFrame = Math.max(framesPerPeriod * (totalPoints - 1), 1) + 30 - 1;
+  } else if (dataType === "chart") {
     const chartData = promptData as ChartVideoData;
     const framesPerPeriod = chartData.framesPerPeriod ?? 60;
-    const totalDurationInFrames = framesPerPeriod * (chartData.frames?.length ?? 1);
+    chartLastFrame = framesPerPeriod * (chartData.frames?.length ?? 1) - 1;
+  }
+
+  useEffect(() => {
+    if (chartLastFrame < 0) return;
+    const player = playerRef.current;
+    if (!player) return;
+    let seeking = false;
+    const handleEnded = () => {
+      if (seeking) return;
+      seeking = true;
+      player.seekTo(chartLastFrame);
+      setTimeout(() => { seeking = false; }, 200);
+    };
+    player.addEventListener("ended", handleEnded);
+    return () => player.removeEventListener("ended", handleEnded);
+  }, [chartLastFrame]);
+
+  if (dataType === "line-chart") {
+    const lineData = promptData as LineChartVideoData;
+    const totalDurationInFrames = chartLastFrame + 1;
 
     return (
       <Player
+        ref={playerRef}
+        component={LineChartVideo}
+        durationInFrames={totalDurationInFrames}
+        fps={30}
+        compositionWidth={1920}
+        compositionHeight={1080}
+        controls
+        style={{ width: "100%" }}
+        inputProps={{ data: lineData }}
+        renderPoster={() => <CoverPoster src={lineData.coverImage} title={lineData.title} />}
+        showPosterWhenUnplayed
+      />
+    );
+  }
+
+  if (dataType === "chart") {
+    const chartData = promptData as ChartVideoData;
+    const totalDurationInFrames = chartLastFrame + 1;
+
+    return (
+      <Player
+        ref={playerRef}
         component={ChartVideo}
         durationInFrames={totalDurationInFrames}
         fps={30}
@@ -109,7 +161,6 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
         inputProps={{ data: chartData }}
         renderPoster={() => <CoverPoster title={chartData.title} />}
         showPosterWhenUnplayed
-        showPosterWhenEnded
       />
     );
   }

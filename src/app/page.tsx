@@ -48,9 +48,10 @@ export default function Home() {
 
     if (type === 'chart') {
       const chartTemplate = TEMPLATES.find((t) => t.type === 'chart');
-      if (chartTemplate) {
-        generateVideo(value, chartTemplate, 'prompt');
-      }
+      if (chartTemplate) generateVideo(value, chartTemplate, 'prompt');
+    } else if (type === 'line-chart') {
+      const lineChartTemplate = TEMPLATES.find((t) => t.type === 'line-chart');
+      if (lineChartTemplate) generateVideo(value, lineChartTemplate, 'prompt');
     } else {
       setStep('templates');
     }

@@ -98,6 +98,105 @@ Rules:
   return NextResponse.json({ result: parsed });
 }
 
+async function handleLineChartGeneration(prompt: string) {
+  const message = await openrouter.chat.completions.create({
+    model: "google/gemini-2.0-flash-001",
+    max_tokens: 16000,
+    messages: [
+      {
+        role: "system",
+        content: `You are a data visualization expert that generates animated line chart data.
+
+Your task: Generate structured JSON for an animated multi-series line chart video based on the user's topic.
+
+Return ONLY valid JSON with this exact structure:
+{
+  "type": "line-chart",
+  "title": "Chart Title",
+  "subtitle": "Date range or context (e.g. '2010 – 2024')",
+  "unit": "Unit label (e.g. 'Monthly Active Users', 'Revenue (USD)')",
+  "valueFormat": "millions",
+  "framesPerPeriod": 30,
+  "series": [
+    {
+      "name": "Series Name",
+      "color": "#3b82f6",
+      "data": [
+        { "label": "2010", "value": 1000000 },
+        { "label": "2011", "value": 1500000 }
+      ]
+    }
+  ]
+}
+
+Rules:
+- "valueFormat": one of "number", "millions", "billions", "percentage" — choose what best fits the values
+- CRITICAL: ALL "value" fields must be raw absolute numbers. Examples: 57 million = 57000000, NOT 57. $3.2B = 3200000000, NOT 3.2. 45% = 45, NOT 0.45.
+- "framesPerPeriod": always 30
+- All series must have the SAME labels in the SAME order
+- 2–8 series (lines); use fewer if the topic only has a few comparable entities
+- 10–25 data points (time periods) per series, sorted chronologically
+- Assign distinct colors from: #3b82f6, #ef4444, #10b981, #f59e0b, #8b5cf6, #06b6d4, #f97316, #84cc16
+- Use accurate historical data if the topic is well-known; otherwise generate plausible data
+- "label" is a short string: a year ("2010"), month+year ("Jan 2020"), or quarter ("Q1 2022")
+- No markdown fences, no explanation — only the JSON object`,
+      },
+      { role: "user", content: prompt },
+    ],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = message.choices[0]?.message?.content ?? "{}";
+  const cleaned = raw.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    console.error("Line chart JSON parse failed:", e);
+    return NextResponse.json(
+      { error: "The AI returned malformed JSON. Please try again with a simpler prompt." },
+      { status: 502 },
+    );
+  }
+
+  if (!Array.isArray(parsed.series) || parsed.series.length === 0) {
+    return NextResponse.json({ error: "AI did not return chart series." }, { status: 502 });
+  }
+
+  // Sanitize each series
+  for (const s of parsed.series) {
+    if (!Array.isArray(s.data)) s.data = [];
+    s.data = s.data.filter(
+      (d: { label?: unknown; value?: unknown }) =>
+        typeof d.label === "string" && typeof d.value === "number"
+    );
+  }
+
+  // Remove empty series
+  parsed.series = parsed.series.filter((s: { data: unknown[] }) => s.data.length > 0);
+
+  // Fetch a cover image from Unsplash based on the chart title
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (unsplashKey && parsed.title) {
+    const coverQuery = encodeURIComponent(parsed.title);
+    const coverRes = await fetch(
+      `https://api.unsplash.com/search/photos?query=${coverQuery}&per_page=1&orientation=landscape&client_id=${unsplashKey}`
+    );
+    if (coverRes.ok) {
+      const coverData = await coverRes.json();
+      const coverPhoto = coverData.results?.[0];
+      if (coverPhoto?.urls?.regular) {
+        parsed.coverImage = coverPhoto.urls.regular;
+      }
+    }
+  }
+
+  console.log("line chart result", { type: parsed.type, title: parsed.title, series: parsed.series.length });
+
+  return NextResponse.json({ result: parsed });
+}
+
 export async function POST(req: Request) {
   try {
     const { prompt, template } = await req.json();
@@ -105,6 +204,10 @@ export async function POST(req: Request) {
     // Chart template: separate AI prompt and response structure
     if (template?.type === "chart") {
       return handleChartGeneration(prompt);
+    }
+
+    if (template?.type === "line-chart") {
+      return handleLineChartGeneration(prompt);
     }
 
     const styleGuidance = template?.styleHint

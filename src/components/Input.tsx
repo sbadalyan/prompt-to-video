@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-export type VideoType = 'promo' | 'chart';
+export type VideoType = 'promo' | 'chart' | 'line-chart';
 
 interface InputProps {
   onSubmit: (prompt: string, type: VideoType) => void;
@@ -21,21 +21,24 @@ const Input = ({ onSubmit }: InputProps) => {
   const placeholder =
     videoType === 'chart'
       ? 'e.g. Top 10 most subscribed YouTube channels 2005–2024'
+      : videoType === 'line-chart'
+      ? 'e.g. Revenue growth of Apple, Google, and Microsoft 2010–2024'
       : 'Describe your video idea...';
 
   const buttonLabel =
-    videoType === 'chart' ? 'Generate Chart →' : 'Choose Style →';
+    videoType === 'promo' ? 'Choose Style →' : 'Generate Chart →';
 
   const TYPE_LABELS: Record<VideoType, string> = {
     promo: 'Presentation',
     chart: 'Bar Chart Race',
+    'line-chart': 'Line Chart',
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {/* Type tabs */}
       <div className="flex gap-1 p-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 self-start">
-        {(['promo', 'chart'] as VideoType[]).map((type) => (
+        {(['promo', 'chart', 'line-chart'] as VideoType[]).map((type) => (
           <button
             key={type}
             type="button"

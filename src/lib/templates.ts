@@ -5,7 +5,7 @@ export interface Template {
   mood: string;
   accentColor: string;
   styleHint: string;
-  type?: "promo" | "chart";
+  type?: "promo" | "chart" | "line-chart";
 }
 
 export const TEMPLATES: Template[] = [
@@ -34,6 +34,15 @@ export const TEMPLATES: Template[] = [
     mood: 'Data',
     accentColor: '#6366f1',
     type: 'chart',
+    styleHint: '',
+  },
+  {
+    id: 'line-chart',
+    name: 'Line Chart',
+    description: 'Animated multi-series line chart showing trends over time',
+    mood: 'Data',
+    accentColor: '#10b981',
+    type: 'line-chart',
     styleHint: '',
   },
 ];
