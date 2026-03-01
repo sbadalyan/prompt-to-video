@@ -157,7 +157,7 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
       <button
         onClick={handleDownload}
         disabled={downloading}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-100 text-sm font-medium transition-colors"
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm transition-all bg-gradient-to-r from-zinc-800 to-zinc-700 hover:from-zinc-700 hover:to-zinc-600 dark:from-zinc-700 dark:to-zinc-600 dark:hover:from-zinc-600 dark:hover:to-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md active:scale-[0.98]"
       >
         {downloading ? (
           <>
@@ -179,7 +179,7 @@ export const VideoPlayer = ({ promptData }: { promptData: VideoResult }) => {
         )}
       </button>
       {downloadError && (
-        <p className="text-xs text-red-500">{downloadError}</p>
+        <p className="text-xs text-red-500 dark:text-red-400">{downloadError}</p>
       )}
     </div>
   );

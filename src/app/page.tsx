@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Input, { type VideoType } from '../components/Input';
 import TemplateSelector from '../components/TemplateSelector';
@@ -13,6 +13,86 @@ const VideoPlayer = dynamic(
 );
 
 type Step = 'prompt' | 'templates' | 'generating' | 'video';
+
+const GENERATING_MESSAGES = [
+  "Crafting your story…",
+  "Fetching visuals…",
+  "Composing scenes…",
+  "Adding animations…",
+  "Almost ready…",
+];
+
+function GeneratingState() {
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % GENERATING_MESSAGES.length);
+    }, 2200);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-20">
+      {/* Animated ring */}
+      <div className="relative w-16 h-16">
+        <svg
+          className="absolute inset-0 animate-spin w-16 h-16 text-blue-500"
+          fill="none"
+          viewBox="0 0 64 64"
+        >
+          <circle
+            cx="32" cy="32" r="28"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray="88 88"
+            className="opacity-20"
+          />
+          <circle
+            cx="32" cy="32" r="28"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray="44 132"
+            className="opacity-80"
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+        </div>
+      </div>
+
+      <div className="text-center">
+        <p className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg">
+          Generating your video
+        </p>
+        <p
+          key={msgIndex}
+          className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 transition-opacity duration-500"
+        >
+          {GENERATING_MESSAGES[msgIndex]}
+        </p>
+      </div>
+
+      {/* Step indicators */}
+      <div className="flex gap-1.5">
+        {GENERATING_MESSAGES.map((_, i) => (
+          <div
+            key={i}
+            className={`h-1 rounded-full transition-all duration-500 ${
+              i === msgIndex
+                ? 'w-6 bg-blue-500'
+                : i < msgIndex
+                ? 'w-2 bg-blue-300 dark:bg-blue-700'
+                : 'w-2 bg-zinc-200 dark:bg-zinc-700'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [step, setStep] = useState<Step>('prompt');
@@ -62,17 +142,30 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen justify-center font-sans dark:bg-zinc-950">
+    <div className="flex min-h-screen flex-col items-center font-sans dark:bg-zinc-950">
       <main className="flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
 
         {step === 'prompt' && (
           <>
-            <div className="text-center">Turn your idea into stunning videos in seconds</div>
+            {/* Hero */}
+            <div className="text-center flex flex-col gap-3">
+              <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-tight">
+                Turn any idea into a{' '}
+                <span className="bg-gradient-to-r from-blue-500 via-violet-500 to-pink-500 bg-clip-text text-transparent">
+                  stunning video
+                </span>
+              </h1>
+              <p className="text-base text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+                Describe what you want — AI handles the rest. Presentations, bar chart races, line charts, and more.
+              </p>
+            </div>
+
             {error && (
-              <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 rounded-lg px-4 py-3">
+              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg px-4 py-3">
                 {error}
               </p>
             )}
+
             <Input onSubmit={handlePromptSubmit} />
           </>
         )}
@@ -87,42 +180,22 @@ export default function Home() {
           />
         )}
 
-        {step === 'generating' && (
-          <div className="flex flex-col items-center gap-4 py-16">
-            <svg
-              className="animate-spin w-10 h-10 text-blue-500"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            <div className="text-center">
-              <p className="font-medium text-zinc-900 dark:text-zinc-100">Generating your video</p>
-              <p className="text-sm text-zinc-500 mt-1">This may take a minute…</p>
-            </div>
-          </div>
-        )}
+        {step === 'generating' && <GeneratingState />}
 
         {step === 'video' && promptData && (
           <div className="flex flex-col gap-6">
             <VideoPlayer promptData={promptData} />
             <button
               onClick={() => { setStep('prompt'); setPromptData(null); setError(null); }}
-              className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors text-center"
+              className="flex items-center justify-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors mx-auto group"
             >
-              ← Create another video
+              <svg
+                className="w-4 h-4 transition-transform group-hover:-translate-x-0.5"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Create another video
             </button>
           </div>
         )}
