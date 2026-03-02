@@ -20,9 +20,11 @@ Prompt to Video is an AI-powered video creation tool built with Next.js and Remo
 ![Presentation video preview](docs/screenshots/presentation-preview.png)
 
 ### Bar Chart Race
+World's largest cities by population 1950–2023
 ![Bar chart race preview](docs/screenshots/bar-chart-preview.png)
 
 ### Line Chart
+Bitcoin vs Ethereum price 2018–2024
 ![Line chart preview](docs/screenshots/line-chart-preview.png)
 
 > **Tip:** Use [ScreenToGif](https://www.screentogif.com/) (Windows) or [Kap](https://getkap.co/) (macOS) to record a GIF of the app in action and drop it here.
