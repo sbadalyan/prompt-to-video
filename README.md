@@ -8,8 +8,6 @@ Prompt to Video is an AI-powered video creation tool built with Next.js and Remo
 
 ## Demo
 
-> Replace the placeholders below with your actual screenshots or screen recordings.
-
 ### Prompt Input
 ![Prompt input screen](docs/screenshots/prompt-input.png)
 
