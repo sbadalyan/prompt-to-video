@@ -23,7 +23,7 @@ World's largest cities by population 1950–2023
 
 ### Line Chart
 Bitcoin vs Ethereum price 2018–2024
-![Line chart preview](docs/screenshots/line-chart-gif.png)
+![Line chart preview](docs/screenshots/line-chart-gif.gif)
 
 ---
 
