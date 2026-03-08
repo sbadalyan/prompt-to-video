@@ -35,6 +35,16 @@ Multi-series trend visualizations drawn frame-by-frame with smooth progressive a
 
 ---
 
+## 💡 Why Use This?
+
+- ✅ Instantly convert text prompts into high-quality videos
+- ✅ Simple API + UI for quick experimentation
+- ✅ Multiple video styles supported
+- ✅ Open-source and customizable for your own projects
+- ✅ Ideal for creators, developers, and AI enthusiasts
+
+---
+
 ## Quick start
 
 ```bash
@@ -73,8 +83,8 @@ Your prompt
     ├── Bar Chart     →  Gemini 2.0 Flash  →  JSON time-series frames
     │
     └── Line Chart    →  Gemini 2.0 Flash  →  JSON series data
-    │
-    ▼
+│
+▼
 Remotion <Player>  →  live in-browser preview
     │
     ▼
@@ -110,58 +120,24 @@ Bitcoin vs Ethereum price 2018–2024
 
 ---
 
-## Features
+## ✨ Features
 
-- **3 video types** — Presentation, Bar Chart Race, Line Chart
-- **2 presentation styles** — Storytelling (cinematic) and Corporate (professional)
-- **AI-generated scripts and data** — Llama 4 Scout for presentations, Gemini 2.0 Flash for charts
-- **Auto stock imagery** — Unsplash photo per scene, chosen from the prompt context
-- **In-browser preview** — Watch before downloading using the embedded Remotion player
-- **1080p MP4 export** — Full-resolution 1920×1080 download, rendered server-side
-- **Dark mode** — Respects system preference
-- **Keyboard shortcut** — `⌘ Enter` / `Ctrl+Enter` to submit
+- Text → Video generation  
+- Prompt optimization and enhancement  
+- Real-time video preview  
+- Lightweight and fast  
 
 ---
 
-## Tech stack
+## 🛠 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| UI | React 19, Tailwind CSS 4, Geist font |
-| Video rendering | Remotion 4 |
-| AI — presentations | OpenRouter → `meta-llama/llama-4-scout` |
-| AI — charts | OpenRouter → `google/gemini-2.0-flash-001` |
-| Images | Unsplash API |
-| Language | TypeScript 5 |
-
----
-
-## Project structure
-
-```
-src/
-├── app/
-│   ├── page.tsx               # Multi-step UI (prompt → templates → generating → video)
-│   ├── layout.tsx             # Root layout, metadata, fonts
-│   ├── globals.css            # Tailwind base + transitions
-│   └── api/
-│       ├── generate/route.ts  # AI generation endpoint
-│       └── render/route.ts    # Remotion server-side MP4 rendering
-├── components/
-│   ├── Input.tsx              # Prompt textarea, type tabs, Cmd+Enter
-│   ├── TemplateSelector.tsx   # Presentation template grid
-│   ├── TemplateCard.tsx       # Template card with preview thumbnail
-│   ├── VideoPlayer.tsx        # Remotion Player wrapper + download
-│   └── remotion/
-│       ├── PromoVideo.tsx     # Presentation scene renderer
-│       ├── ChartVideo.tsx     # Bar chart race renderer
-│       └── LineChartVideo.tsx # Line chart renderer
-└── lib/
-    └── templates.ts           # Template definitions
-```
-
----
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript 5
+- **Video Rendering:** Remotion 4
+- **Styling:** Tailwind CSS 4
+- **AI:** OpenRouter (Llama 4 Scout, Gemini 2.0 Flash)
+- **Images:** Unsplash API
+- **Deployment:** Vercel / Netlify compatible
 
 ## Contributing
 
