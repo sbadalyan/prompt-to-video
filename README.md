@@ -18,11 +18,9 @@ Prompt to Video is an AI-powered video creation tool built with Next.js and Remo
 ![Presentation video preview](docs/screenshots/presentation-preview.png)
 
 ### Bar Chart Race
-World's largest cities by population 1950–2023
 ![Bar chart race preview](docs/screenshots/bar-chart-gif.gif)
 
 ### Line Chart
-Bitcoin vs Ethereum price 2018–2024
 ![Line chart preview](docs/screenshots/line-chart-gif.gif)
 
 ---
