@@ -26,12 +26,12 @@ Cinematic or corporate slide-style videos — split-screen layouts, Unsplash ima
 ### Bar Chart Race
 Animated ranking charts where bars grow and reorder as values change across time periods.
 
-![Bar chart race preview](docs/screenshots/bar-chart-gif.gif)
+![Bar chart race preview](docs/screenshots/bar-chart.gif)
 
 ### Line Charts
 Multi-series trend visualizations drawn frame-by-frame with smooth progressive animation.
 
-![Line chart preview](docs/screenshots/line-chart-gif.gif)
+![Line chart preview](docs/screenshots/line-chart.gif)
 
 ---
 
